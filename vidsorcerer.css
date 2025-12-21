@@ -1,0 +1,16 @@
+.vidsorcerer {
+  opacity: 1 !important;
+  white-space: nowrap;
+}
+
+.vidsorcerer a {
+  text-decoration: none !important;
+}
+
+.vidsorcerer a:is(:focus, :hover) {
+  filter: contrast(0.5);
+}
+
+.vidsorcerer_player.stale {
+  opacity: 0.5;
+}

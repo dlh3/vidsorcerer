@@ -1,0 +1,73 @@
+<html>
+
+<head>
+  <title>VidSorcerer Instructions</title>
+  <link rel="icon"
+    href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;🍿&lt;/text&gt;&lt;/svg&gt;">
+  <style>
+    body {
+      background-color: lavenderblush;
+      font-family: monospace;
+      font-size: x-large;
+      max-width: 800px;
+    }
+
+    ol {
+      display: flex;
+      gap: 1rem;
+      flex-direction: column;
+    }
+
+    label {
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .bookmarklet {
+      text-decoration: none;
+    }
+  </style>
+
+  <script type="text/javascript">
+    function sideloader(src, args = {}) {
+      window.sideloader = { ...window.sideloader, args };
+      s = document.createElement('script');
+      s.src = src + '?' + Date.now();
+      s.onload = _ => console.log('Loading:', src);
+      s.onerror = _ => alert('Unable to load app. Try again.\\n\\nIf the issue persists, try running this app on a different site.');
+      (document.body || document.firstChild).appendChild(s);
+    }
+
+    window.addEventListener('load', () =>
+      document.querySelector('.bookmarklet').href =
+      "javascript:/* https://dlh3.github.io/vidsorcerer/instructions.html */("
+      + sideloader.toString()
+      + ")('https://dlh3.github.io/vidsorcerer/vidsorcerer.js',{vidHost: undefined})"
+      + " /* the vidHost domain can be provided, if you know what you're doing */");
+  </script>
+</head>
+
+<body>
+  <h1>About VidSorcerer</h1>
+  <p>VidSorcerer🍿 is the ultimate free streaming sidekick. It augments <a href="https://www.themoviedb.org/">The Movie
+      Database</a> with free streaming links!</p>
+  <p>Follow the instructions below to save this app as a browser bookmark.</p>
+
+  <h1>Instructions</h1>
+  <ol>
+    <li>
+      Save
+      <a class="bookmarklet"
+        onclick="alert('Do not click this link!\n\nDrag the link to your bookmarks and run it in step 3.'); return false">
+        VidSorcerer🍿
+      </a>
+      as a bookmark
+    </li>
+    <li>Visit <a href="https://www.themoviedb.org/">The Movie Database</a> (TMDB)</li>
+    <li>Click the bookmark from step 1 on any TMDB page (homepage, movie, TV show or episode, etc) to get links to the
+      <label>📇TV Episode Guide</label> and <label>🍿Video Player</label>
+    </li>
+  </ol>
+</body>
+
+</html>
