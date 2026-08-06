@@ -19,8 +19,11 @@
 
   // default player params
   const DEFAULT_PARAMS = {
-    autonext: true,
-    autoplay: true,
+    autonext: 1,
+    autoplay: 1,
+    autoplayNextEpisode: 'true',
+    episodeSelector: 'true',
+    nextEpisode: 'true',
     ds_lang: 'off', // TODO
   };
 
@@ -47,15 +50,16 @@
   const incrementWatchCount = (id) => setParam(_namespace_watched + id, getWatchCount(id) + 1);
 
   // player URL construction
-  const _queryParam = (name, value = Number(getParam(name))) => name + '=' + value;
-  const getPlayerUrl = (id, s, e) => {
+  const _queryParam = (name, value = getParam(name)) => name + '=' + value;
+  const getPlayerUrl = (type, id, s, e) => {
     const origin = vidsorcerer.vidHost.replace(/\/$/, '');
-    const pathname = origin + '/embed/' + id;
 
-    const episodeQuery = (null == s ? '' : '&s=' + s + '&e=' + (null == e ? 1 : e));
-    const search = `?${_queryParam('autonext')}&${_queryParam('autoplay')}${episodeQuery}`;
+    const episodeQuery = null == s ? '' : `/${s}/${null == e ? 1 : e}`;
+    const pathname = `/${type}/${id}${episodeQuery}`;
 
-    return pathname + search;
+    const search = `?${_queryParam('autonext')}&${_queryParam('autoplay')}&${_queryParam('autoplayNextEpisode')}&${_queryParam('episodeSelector')}&${_queryParam('nextEpisode')}`;
+
+    return origin + pathname + search;
   }
 
   // TMDB URI parsing
@@ -63,7 +67,7 @@
     uri
       .split('/')
       .slice(1)
-      .filter((_, i) => i % 2 && _.length);
+      .filter((_, i) => i == 0 || i % 2 && _.length);
   const tmdbUriToPlayerUrl = (uri) => getPlayerUrl(...parseTmdbUri(uri));
 
   // watch tracking
