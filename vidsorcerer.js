@@ -4,7 +4,8 @@
 
   // if not on TMDB, open a new window to it
   if (!window.location.host.includes('themoviedb.org')) {
-    window.open('https://www.themoviedb.org/');
+    let q = prompt('Search query? (leave blank for homepage)');
+    window.open('https://www.themoviedb.org/' + (q ? 'search?query=' + q : ''));
     return;
   }
 
