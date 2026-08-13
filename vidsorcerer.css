@@ -11,6 +11,11 @@
   filter: contrast(0.5);
 }
 
-.vidsorcerer_player.stale {
+.vidsorcerer__player.stale {
   opacity: 0.5;
+}
+
+#vidsorcerer__providers {
+  font-size: 1.5rem;
+  font-weight: bolder;
 }

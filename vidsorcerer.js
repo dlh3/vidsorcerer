@@ -1,12 +1,12 @@
 // @ts-nocheck
 
-(function ({ vidHost = 'http://vidsorcerer.ddns.net' }) {
+(function () {
   const TMDB_HOST = 'www.themoviedb.org';
 
   // if not on TMDB, open a new window to it
   // if already on TMDB with vidsorcerer loaded, perform search
   if (window.vidsorcerer || !window.location.host.includes(TMDB_HOST)) {
-    let q = prompt('Search query? (submit blank for homepage)');
+    const q = prompt('Search query? (submit blank for homepage)');
     if (q !== null)
       (window.location.host.includes(TMDB_HOST) ? vidsorcerer.navigate : window.open)(`https://${TMDB_HOST}/${q ? 'search?query=' + q : ''}`);
     return;
@@ -20,16 +20,6 @@
   const removeAll = (selector) => $$(selector).forEach(_ => _.remove());
   const stripOrigin = (url) => url.href.replace(url.origin, '');
 
-  // default player params
-  const DEFAULT_PARAMS = {
-    autonext: 1,
-    autoplay: 1,
-    autoplayNextEpisode: 'true',
-    episodeSelector: 'true',
-    nextEpisode: 'true',
-    ds_lang: 'off', // TODO
-  };
-
   // local storage
   const _namespace = 'vidsorcerer:';
   const setParam = (id, value, sessionOnly) => {
@@ -40,7 +30,7 @@
   const getParam = (id) => {
     const name = _namespace + id;
     const persisted = sessionStorage.getItem(name) || localStorage.getItem(name);
-    return persisted ? JSON.parse(persisted) : DEFAULT_PARAMS[id];
+    return JSON.parse(persisted || 'null');
   };
 
   const _namespace_feature = 'feature:';
@@ -52,15 +42,60 @@
   const getWatchCount = (id) => (getParam(_namespace_watched + id) || 0);
   const incrementWatchCount = (id) => setParam(_namespace_watched + id, getWatchCount(id) + 1);
 
+  const _key_host = 'host';
+  const getProvidersInput = () => $$('#vidsorcerer__providers select')[0];
+  const getSelectedProviderName = () => getProvidersInput().selectedOptions[0].parentElement.label;
+  const getSelectedProvider = () => vidsorcerer.providers[getSelectedProviderName()];
+  const getSelectedHost = () => getParam(_key_host) || Object.values(vidsorcerer.providers)[0].domains[0];
+  const setSelectedHost = (domain) => setParam(_key_host, `"${domain}"`);
+
+  // streaming providers
+  const registerProviders = (providers) => {
+    log('register providers');
+    vidsorcerer.providers = providers;
+
+    const selectedHost = getSelectedHost();
+
+    // update providers list
+    removeAll('#vidsorcerer__providers');
+    $$('.first')[0].insertAdjacentHTML("beforebegin", `
+      <label id="vidsorcerer__providers">Stream provider:
+        <select>
+          ${Object.keys(providers)
+            .filter(name => providers[name].enabled)
+            .flatMap(name => `<optgroup label="${name}">` + providers[name].domains.map(domain => `<option${selectedHost === domain ? ' selected' : ''}>${domain}</option>`) + '</optgroup>')
+            .join('\n')}
+        </select>
+      </label>
+      `);
+
+    // handle server selection
+    const select = getProvidersInput();
+    select.onchange = () => {
+      const domain = select.selectedOptions[0].value;
+      setSelectedHost(domain);
+      log(`selected provider [${domain}]`);
+
+      // refresh player links
+      removeAll('.vidsorcerer');
+      injectSorcerers();
+    };
+  };
+
   // player URL construction
-  const _queryParam = (name, value = getParam(name)) => name + '=' + value;
-  const getPlayerUrl = (type, id, s, e) => {
-    const origin = vidsorcerer.vidHost.replace(/\/$/, '');
+  const getPlayerUrl = (type, slug, s, e) => {
+    const provider = getSelectedProvider();
+    const host = getSelectedHost();
 
+    const origin = 'https://' + host;
+
+    const id = slug.split('-')[0];
     const episodeQuery = null == s ? '' : `/${s}/${null == e ? 1 : e}`;
-    const pathname = `/${type}/${id}${episodeQuery}`;
+    const pathname = `${provider.path.replace(/\/$/, '')}/${type}/${id}${episodeQuery}`;
 
-    const search = `?${_queryParam('autonext')}&${_queryParam('autoplay')}&${_queryParam('autoplayNextEpisode')}&${_queryParam('episodeSelector')}&${_queryParam('nextEpisode')}`;
+    const search = '?' + Object.entries(provider.params)
+      .map(([name, value]) => name + '=' + value)
+      .join('&');
 
     return origin + pathname + search;
   }
@@ -85,7 +120,7 @@
 
   // intercept links, convert site to SPA
   const interceptNavigation = () => vidsorcerer.features.spaMode &&
-    $$('a[href]:not(.vidsorcerer_player, .vidsorcerer__intercepted)').forEach(a => {
+    $$('a[href]:not(.vidsorcerer__player, .vidsorcerer__intercepted)').forEach(a => {
       a.classList.add('vidsorcerer__intercepted');
 
       // using the DOM's onclick so it is carried through history navigation
@@ -96,11 +131,24 @@
     });
 
   // injectors
+  const injectProviders = async () => {
+    log('inject providers');
+    const {promise, resolve} = Promise.withResolvers();
+
+    const script = document.createElement('script');
+    script.className = 'vidsorcerer__script';
+    script.src = 'https://dlh3.github.io/vidsorcerer/vidsorcerer.providers.js?' + Date.now();
+    script.onload = resolve;
+    document.head.appendChild(script);
+
+    return promise;
+  };
+
   const injectStyle = () => {
-    log('style');
+    log('inject style');
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.className = 'vidsorcerer vidsorcerer__style';
+    style.className = 'vidsorcerer__style';
     style.href = 'https://dlh3.github.io/vidsorcerer/vidsorcerer.css?' + Date.now();
     document.head.appendChild(style);
   };
@@ -131,7 +179,7 @@
         const player = document.createElement('a');
         // using the DOM's onclick so it is carried through history navigation
         player.setAttribute('onclick', 'window.vidsorcerer.watch(this)');
-        player.className = 'vidsorcerer_player ' + (getWatchCount(uri) ? 'stale' : '');
+        player.className = 'vidsorcerer__player ' + (getWatchCount(uri) ? 'stale' : '');
         player.dataset.tmdbUri = uri;
         player.href = tmdbUriToPlayerUrl(uri);
         player.target = "_blank"
@@ -196,7 +244,6 @@ vidsorcerer.enableSpaMode();
     window.vidsorcerer = {
       features: { spaMode: featureEnabled('spaMode') || true },
       ...window.vidsorcerer,
-      vidHost,
       init,
       navigate,
       watch,
@@ -224,5 +271,6 @@ vidsorcerer.enableSpaMode();
   };
 
   // go
-  init();
+  window.vidsorcerer = { registerProviders };
+  injectProviders().then(init);
 })(window.sideloader?.args || {});
