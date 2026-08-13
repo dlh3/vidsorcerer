@@ -1,11 +1,14 @@
 // @ts-nocheck
 
 (function ({ vidHost = 'http://vidsorcerer.ddns.net' }) {
+  const TMDB_HOST = 'www.themoviedb.org';
 
   // if not on TMDB, open a new window to it
-  if (!window.location.host.includes('themoviedb.org')) {
-    let q = prompt('Search query? (leave blank for homepage)');
-    window.open('https://www.themoviedb.org/' + (q ? 'search?query=' + q : ''));
+  // if already on TMDB with vidsorcerer loaded, perform search
+  if (window.vidsorcerer || !window.location.host.includes(TMDB_HOST)) {
+    let q = prompt('Search query? (submit blank for homepage)');
+    if (q !== null)
+      (window.location.host.includes(TMDB_HOST) ? vidsorcerer.navigate : window.open)(`https://${TMDB_HOST}/${q ? 'search?query=' + q : ''}`);
     return;
   }
 
